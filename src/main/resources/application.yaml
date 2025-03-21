@@ -5,7 +5,7 @@ spring:
   application:
     name: popcorn-palace
   datasource:
-    url: jdbc:postgresql://localhost:5432/popcorn-palace
+    url: jdbc:postgresql://localhost:5432/popcorn_palace
     username: popcorn-palace
     password: popcorn-palace
     driverClassName: org.postgresql.Driver
@@ -14,7 +14,21 @@ spring:
     database: POSTGRESQL
     show-sql: true
     hibernate:
-      ddl-auto: update
+      ddl-auto: create #
+    properties:
+      hibernate:
+        format_sql: true # log
+    defer-datasource-initialization: true # create tables before inserting the data
   sql:
     init:
       mode: always
+
+  logging:
+    level:
+      org.springframework.jdbc.datasource.init: trace
+      org.springframework.jdbc.datasource.init.ScriptUtils: debug
+      org.hibernate.SQL: debug
+#      org.hibernate.type.descriptor.sql.BasicBinder: trace
+#      org.springframework.boot.sql.init: DEBUG
+#      org.hibernate.stat: debug
+
