@@ -5,7 +5,9 @@ import com.att.tdp.popcorn_palace.model.Movie;
 import com.att.tdp.popcorn_palace.model.Showtime;
 import com.att.tdp.popcorn_palace.repository.ShowtimeRepository;
 import jakarta.transaction.Transactional;
-import jakarta.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,16 +16,20 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class ShowtimeServiceImpl implements ShowtimeService {
 
     private static final Logger logger = LoggerFactory.getLogger(ShowtimeServiceImpl.class);
     private final ShowtimeRepository showtimeRepository;
+    private final Validator validator;
 
     @Autowired
-    public ShowtimeServiceImpl(ShowtimeRepository showtimeRepository) {
+    public ShowtimeServiceImpl(ShowtimeRepository showtimeRepository, Validator validator) {
         this.showtimeRepository = showtimeRepository;
+        this.validator = validator;
     }
 
     @Override
@@ -38,11 +44,10 @@ public class ShowtimeServiceImpl implements ShowtimeService {
 
     @Override
     public Optional<Showtime> addShowtime(Showtime showtime) {
+        // Run bean validation explicitly before saving
+//        validateShowtime(showtime);
 
-        Pair<Boolean, String> validationResult = validateShowtime(showtime);
-        if (!validationResult.getFirst()) {
-            throw new ShowtimeValidationException(validationResult.getSecond());
-        }
+        validate(showtime);
 
         try {
             return Optional.of(showtimeRepository.save(showtime));
@@ -50,34 +55,6 @@ public class ShowtimeServiceImpl implements ShowtimeService {
             logger.error("Error saving showtime", e);
             return Optional.empty();
         }
-    }
-
-    // moving validation logic to validators causes autowire headache
-    private Pair<Boolean, String> validateShowtime(Showtime showtime) {
-        // If any required fields are null, not checking for overlaps (other validators handle)
-        if (showtime.getTheater() == null || showtime.getStartTime() == null || showtime.getEndTime() == null) {
-            return Pair.of(true, "");
-        }
-
-        logger.info("theater id: {}, start time: {}, end time: {}", showtime.getTheater().getId(), showtime.getStartTime(), showtime.getEndTime());
-
-        // fetch potentially overlapping showtimes
-        List<Showtime> potentialOverlaps = showtimeRepository.findOverlappingShowtimes(
-                showtime.getTheater().getId(),
-                showtime.getStartTime(),
-                showtime.getEndTime());
-
-        if (showtime.getId() != null) {
-            potentialOverlaps.removeIf(s -> s.getId().equals(showtime.getId()));
-        }
-        logger.info("potential overlaps size: {}", potentialOverlaps.size());
-
-        if (!potentialOverlaps.isEmpty()) {
-            Showtime first = potentialOverlaps.getFirst();
-            return Pair.of(false, "Showtime overlaps with existing showtime (id: " + first.getId() + ", times: " + first.getStartTime() + " - " + first.getEndTime() + ")");
-        }
-
-        return Pair.of(true, "");
     }
 
     @Override
@@ -91,6 +68,11 @@ public class ShowtimeServiceImpl implements ShowtimeService {
             showtime.setTheater(updatedShowtime.getTheater());
             showtime.setStartTime(updatedShowtime.getStartTime());
             showtime.setEndTime(updatedShowtime.getEndTime());
+
+            // Run bean validation explicitly before saving
+//            validateShowtime(showtime);
+
+            validate(showtime);
 
             return Optional.of(showtimeRepository.save(showtime));
         }
@@ -116,5 +98,58 @@ public class ShowtimeServiceImpl implements ShowtimeService {
     @Override
     public List<Showtime> findByMovieId(Long movieId) {
         return showtimeRepository.findByMovie_Id(movieId);
+    }
+
+    //// Validation methods
+
+    /**
+     * Validates the showtime entity using Bean Validation
+     * Throws ConstraintViolationException if validation fails
+     * (w.o this, this exception is wrapped)
+     */
+//    private void validateShowtime(Showtime showtime) {
+//        Set<ConstraintViolation<Showtime>> violations = validator.validate(showtime);
+//        if (!violations.isEmpty()) {
+//            String errorMessage = violations.stream()
+//                    .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+//                    .collect(Collectors.joining(", "));
+//
+//            logger.error("Validation failed for showtime: {}", errorMessage);
+//            throw new ConstraintViolationException("Validation failed: " + errorMessage, violations);
+//        }
+//    }
+
+    private void validate(Showtime showtime) {
+        Pair<Boolean, String> validationOverlapResult = validateNoOverlapShowtime(showtime);
+        if (!validationOverlapResult.getFirst()) {
+            throw new ShowtimeValidationException(validationOverlapResult.getSecond());
+        }
+    }
+
+    private Pair<Boolean, String> validateNoOverlapShowtime(Showtime showtime) {
+        // If any required fields are null, not checking for overlaps (other validators handle)
+        if (showtime.getTheater() == null || showtime.getStartTime() == null || showtime.getEndTime() == null) {
+            return Pair.of(true, "");
+        }
+
+        logger.info("theater id: {}, start time: {}, end time: {}", showtime.getTheater().getId(), showtime.getStartTime(), showtime.getEndTime());
+
+        // fetch potentially overlapping showtimes
+        List<Showtime> potentialOverlaps = showtimeRepository.findOverlappingShowtimes(
+                showtime.getTheater().getId(),
+                showtime.getStartTime(),
+                showtime.getEndTime());
+
+        if (showtime.getId() != null) {
+            potentialOverlaps.removeIf(s -> s.getId().equals(showtime.getId()));
+        }
+        logger.info("potential overlaps size: {}", potentialOverlaps.size());
+
+        if (!potentialOverlaps.isEmpty()) {
+            Showtime first = potentialOverlaps.getFirst();
+            return Pair.of(false, "Showtime overlaps with existing showtime (id: " + first.getId() + ", times: " + first.getStartTime() + " - " + first.getEndTime() + ")");
+        }
+
+        return Pair.of(true, "");
     }
 }

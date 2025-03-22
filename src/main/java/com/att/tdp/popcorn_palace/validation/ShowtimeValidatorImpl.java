@@ -1,29 +1,24 @@
 package com.att.tdp.popcorn_palace.validation;
 
 import com.att.tdp.popcorn_palace.model.Showtime;
-import com.att.tdp.popcorn_palace.repository.ShowtimeRepository;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.stereotype.Component;
+
+import java.time.Duration;
 
 
-import java.util.List;
-
-//@Component
 public class ShowtimeValidatorImpl implements ConstraintValidator<ShowtimeValidator, Showtime> {
     private static final Logger logger = LoggerFactory.getLogger(ShowtimeValidatorImpl.class);
-
-//    @Autowired
-//    private ShowtimeRepository showtimeRepository;
+    private int maxDurationMinutes;
+    private int minDurationMinutes;
 
     @Override
     public void initialize(ShowtimeValidator constraintAnnotation) {
         ConstraintValidator.super.initialize(constraintAnnotation);
-//        showtimeRepository = ServiceUtils.getShowtimeRepository(); // autowire not working!
+        this.maxDurationMinutes = constraintAnnotation.maxDurationMinutes();
+        this.minDurationMinutes = constraintAnnotation.minDurationMinutes();
     }
 
     @Override
@@ -34,21 +29,43 @@ public class ShowtimeValidatorImpl implements ConstraintValidator<ShowtimeValida
         context.disableDefaultConstraintViolation();
 
         // Validate start time is before end time
-        isValid = validateStartEndTime(showtime, context);
+        isValid = validateStartBeforeEndTime(showtime, context);
         if (!isValid) {
             return false;
         }
 
-        // Validate no theater showtime overlaps
-//        isValid = validateNoTheaterOverlap(showtime, context);
-//        if (!isValid) {
-//            return false;
-//        }
+        // Validate duration is less than max duration
+        isValid = validateDuration(showtime, context);
+        if (!isValid) {
+            return false;
+        }
+
 
         return true;
     }
 
-    private boolean validateStartEndTime(Showtime showtime, ConstraintValidatorContext context) {
+    private boolean validateDuration(Showtime showtime, ConstraintValidatorContext context) {
+        if (showtime.getStartTime() == null || showtime.getEndTime() == null) {
+            // Let the @NotNull annotations handle null values
+            return true;
+        }
+
+        long durationMinutes = Duration.between(showtime.getStartTime(), showtime.getEndTime()).toMinutes();
+        boolean isDurationValid = (durationMinutes <= maxDurationMinutes);
+        isDurationValid = (durationMinutes >= minDurationMinutes) && isDurationValid;
+
+        if (!isDurationValid) {
+            context.buildConstraintViolationWithTemplate(
+                            "Showtime duration must between " + minDurationMinutes + " - " + maxDurationMinutes + " minutes")
+                    .addPropertyNode("endTime")
+                    .addConstraintViolation();
+        }
+
+        return isDurationValid;
+    }
+
+
+    private boolean validateStartBeforeEndTime(Showtime showtime, ConstraintValidatorContext context) {
         if (showtime.getStartTime() == null || showtime.getEndTime() == null) {
             // Let the @NotNull annotations handle null values
             return true;
@@ -64,7 +81,5 @@ public class ShowtimeValidatorImpl implements ConstraintValidator<ShowtimeValida
 
         return isTimeValid;
     }
-
-
 
 }

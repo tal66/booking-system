@@ -2,20 +2,19 @@ package com.att.tdp.popcorn_palace.controller;
 
 import com.att.tdp.popcorn_palace.dto.ShowtimeRequest;
 import com.att.tdp.popcorn_palace.exception.ShowtimeValidationException;
-import com.att.tdp.popcorn_palace.model.Theater;
-import com.att.tdp.popcorn_palace.service.TheaterService;
-import jakarta.validation.ConstraintViolationException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.att.tdp.popcorn_palace.model.Movie;
 import com.att.tdp.popcorn_palace.model.Showtime;
+import com.att.tdp.popcorn_palace.model.Theater;
 import com.att.tdp.popcorn_palace.service.MovieService;
 import com.att.tdp.popcorn_palace.service.ShowtimeService;
+import com.att.tdp.popcorn_palace.service.TheaterService;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -174,15 +173,10 @@ public class ShowtimeController {
 
             logger.info("updated showtime with id: {}", showtimeId);
             return ResponseEntity.ok(response);
-        } catch (ConstraintViolationException e) {
+        } catch (ShowtimeValidationException e) {
             logger.error("failed to update showtime {}. error: {}", showtimeId, e.getMessage());
             Map<String, Object> response = Map.of("error", "Failed to update showtime. " + e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        } catch (Exception e) {
-            logger.error("failed to update showtime {}. error: {}", showtimeId, e.getMessage());
-            logger.error("exception: ", e);
-            Map<String, Object> response = Map.of("error", "Failed to update showtime");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
