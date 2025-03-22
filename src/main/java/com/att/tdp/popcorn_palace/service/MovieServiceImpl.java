@@ -25,8 +25,8 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
-    public Movie addMovie(Movie movie) {
-        return movieRepository.save(movie);
+    public Optional<Movie> addMovie(Movie movie) {
+        return Optional.of(movieRepository.save(movie));
     }
 
     @Override
@@ -58,9 +58,17 @@ public class MovieServiceImpl implements MovieService {
         return false;
     }
 
+    ////////// find
+
     @Override
-    public List<Movie> findByTitleContaining(String title) {
-        return movieRepository.findByTitleContaining(title);
+    public Optional<Movie> findById(Long id) {
+        return movieRepository.findById(id);
+    }
+
+
+    @Override
+    public Optional<Movie> findByTitle(String title) {
+        return movieRepository.findByTitleIgnoreCase(title);
     }
 
     @Override

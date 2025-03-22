@@ -31,7 +31,7 @@ public class CustomErrorController implements ErrorController {
         // Get the error message
         String message = (String) request.getAttribute("javax.servlet.error.message");
         if (message == null || message.isEmpty()) {
-            message = "Resource not found";
+            message = "General error";
         }
 
         // Get the error path

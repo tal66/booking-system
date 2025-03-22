@@ -1,14 +1,25 @@
 package com.att.tdp.popcorn_palace.controller;
 
+import com.att.tdp.popcorn_palace.validation.ShowtimeValidator;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.constraints.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,17 +42,102 @@ public class GlobalExceptionHandler {
 
         logger.warn("Validation failed: {}", errors);
 
-        return ResponseEntity.badRequest().body(errors);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
     }
+
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ResponseEntity<Map<String, String>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        logger.warn("Data integrity violation: {}", ex.getMessage());
+
+        Map<String, String> errors = new HashMap<>();
+        String message = ex.getMostSpecificCause().getMessage();
+        String err = "Database constraint violation occurred";
+
+        if (message.contains("unique constraint") || message.contains("Duplicate entry")) {
+            if (message.contains("duplicate key value violates unique constraint \"movies_title_key\"")) {
+                err = "A movie with the same title already exists";
+            } else if (message.contains("duplicate key value violates unique constraint \"theaters_name_key\"")) {
+                err = "A theater with the same name already exists";
+            } else {
+                err = "A record with the same unique identifier already exists";
+            }
+        }
+
+        errors.put("error", err);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errors);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<Map<String, String>> handleConstraintViolation(ConstraintViolationException ex) {
+        Map<String, String> errors = new HashMap<>();
+
+        ex.getConstraintViolations().forEach(violation -> {
+//            String propertyPath = violation.getPropertyPath().toString();
+            String message = violation.getMessage();
+
+            // ShowtimeValidator
+            if (violation.getConstraintDescriptor().getAnnotation() instanceof ShowtimeValidator) {
+                message = "Showtime validation failed: " + message;
+            }
+
+            errors.put("error", message);
+        });
+
+        logger.warn("Constraint violation: {}", errors);
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<Map<String, String>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        logger.warn("Type mismatch: {}", ex.getMessage());
+
+        Map<String, String> errors = new HashMap<>();
+        String paramName = ex.getName();
+        String requiredType = ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown";
+        String providedValue = ex.getValue() != null ? ex.getValue().toString() : "null";
+
+        String errorMessage = String.format(
+                "Parameter '%s' must be a valid %s, but received: '%s'",
+                paramName, requiredType, providedValue);
+
+        errors.put("error", errorMessage);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<Map<String, String>> handleMissingRequestBody(HttpMessageNotReadableException ex) {
+        logger.warn("Request body error: {}", ex.getMessage());
+
+        Map<String, String> errors = new HashMap<>();
+        String errorMessage = "Required request body is missing";
+
+        errors.put("error", errorMessage);
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+    }
+
+    //////
 
     @ExceptionHandler(Exception.class) // Generic fallback
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ResponseEntity<Map<String, String>> handleGlobalException(Exception ex) {
         logger.error("Unexpected error: {}", ex.getMessage());
+        logger.error("Stack trace: ", ex);
 
         Map<String, String> response = new HashMap<>();
-        response.put("error", "An unexpected error occurred");
 
+        String err = "An unexpected error occurred";
+        if (ex.getMessage().contains("Request method")) {
+            err = "Request method not supported";
+        }
+
+        response.put("error", err);
         return ResponseEntity.internalServerError().body(response);
     }
 }

@@ -8,8 +8,6 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -40,11 +38,16 @@ public class MovieController {
 
     @PostMapping
     public ResponseEntity<Movie> addMovie(@Valid @RequestBody Movie movie) {
-        Movie savedMovie = movieService.addMovie(movie);
+        Optional<Movie> savedMovie = movieService.addMovie(movie);
+        if (savedMovie.isEmpty()) {
+            logger.info("failed to add movie '{}'", movie.getTitle());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
 
-        logger.info("added movie '{}'", savedMovie.getTitle());
+        Movie movieResponse = savedMovie.get();
+        logger.info("added movie '{}'", movieResponse.getTitle());
 
-        return new ResponseEntity<>(savedMovie, HttpStatus.OK);
+        return ResponseEntity.ok(movieResponse);
     }
 
     @PostMapping("/update/{movieTitle}")
@@ -87,7 +90,23 @@ public class MovieController {
         }
     }
 
-    @GetMapping("/")
+    @GetMapping("/{movieTitle}")
+    public ResponseEntity<Object> getMovieByTitle(@PathVariable String movieTitle) {
+        Optional<Movie> movie = movieService.findByTitle(movieTitle);
+
+        if (movie.isPresent()) {
+            logger.info("get movie by title '{}'", movieTitle);
+            return ResponseEntity.ok(movie.get());
+        } else {
+            logger.info("failed to get movie by title '{}'", movieTitle);
+            Map<String, String> response = new HashMap<>();
+            response.put("error", "Movie not found");
+            response.put("movie", movieTitle);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+    }
+
+    @GetMapping("/search")
     public ResponseEntity<List<Movie>> searchMovies(
             @RequestParam(required = false, defaultValue = "") String title,
             @RequestParam(required = false, defaultValue = "") String genre,
@@ -99,20 +118,4 @@ public class MovieController {
         return new ResponseEntity<>(movies, HttpStatus.OK);
     }
 
-//    @ResponseStatus(HttpStatus.BAD_REQUEST)
-//    @ExceptionHandler(MethodArgumentNotValidException.class)
-//    public ResponseEntity<Object> handleValidationExceptions(MethodArgumentNotValidException ex) {
-//        var errors = ex.getBindingResult()
-//                .getAllErrors()
-//                .stream()
-//                .collect(
-//                        java.util.stream.Collectors.toMap(
-//                                error -> ((FieldError) error).getField(),
-//                                error -> error.getDefaultMessage(),
-//                                (error1, error2) -> error1
-//                        )
-//                );
-//
-//        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
-//    }
 }

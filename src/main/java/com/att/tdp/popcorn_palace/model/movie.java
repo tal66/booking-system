@@ -42,7 +42,7 @@ public class Movie {
     @Max(value = 2025, message = "Release year must be at most 2025")
     private Integer releaseYear;
 
-    // Constructor without id for creating new movies
+    // Constructor without id
     public Movie(String title, String genre, Integer duration, Double rating, Integer releaseYear) {
         this.title = title;
         this.genre = genre;
