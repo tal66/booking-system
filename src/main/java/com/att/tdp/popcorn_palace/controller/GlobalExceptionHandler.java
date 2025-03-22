@@ -71,7 +71,6 @@ public class GlobalExceptionHandler {
         Map<String, Object> errors = new HashMap<>();
 
         ex.getConstraintViolations().forEach(violation -> {
-//            String propertyPath = violation.getPropertyPath().toString();
             String message = violation.getMessage();
 
             // ShowtimeValidator
@@ -138,7 +137,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ShowtimeValidationException.class)
     public ResponseEntity<Map<String, Object>> handleShowtimeValidationException(ShowtimeValidationException ex) {
-        logger.error("Showtime validation error: {}", ex.getMessage());
+        logger.warn("Showtime validation error: {}", ex.getMessage());
 
         Map<String, Object> response = new HashMap<>();
         response.put("error", "Validation failed");
@@ -153,14 +152,17 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ResponseEntity<Map<String, String>> handleGlobalException(Exception ex) {
         logger.error("Unexpected error: {}", ex.getMessage());
-        logger.error("Stack trace: ", ex);
 
         Map<String, String> response = new HashMap<>();
 
         String err = "An unexpected error occurred";
         if (ex.getMessage().contains("Request method")) {
             err = "Request method not supported";
+        } else {
+            logger.error("Stack trace: ", ex);
         }
+
+
 
         response.put("error", err);
         return ResponseEntity.internalServerError().body(response);

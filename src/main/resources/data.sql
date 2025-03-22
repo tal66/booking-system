@@ -1,7 +1,6 @@
 -- Insert sample movies
 INSERT INTO movies (title, genre, duration, rating, release_year)
 VALUES
-  ('The Shawshank Redemption', 'Drama', 142, 9.3, 1994),
   ('Iron Man', 'Action, Sci-Fi', 126, 7.9, 2008),
   ('The Incredible Hulk', 'Action, Sci-Fi', 112, 6.6, 2008),
   ('Iron Man 2', 'Action, Sci-Fi', 124, 7.0, 2010),

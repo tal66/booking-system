@@ -24,7 +24,7 @@ public class Showtime {
     private Long id;
 
     @JsonIgnore
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "movie_id", nullable = false, referencedColumnName = "id")
     private Movie movie;
 
