@@ -1,4 +1,4 @@
-package com.att.tdp.popcorn_palace.service;
+package com.att.tdp.popcorn_palace.service.interfaces;
 
 import com.att.tdp.popcorn_palace.model.Theater;
 

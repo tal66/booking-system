@@ -3,7 +3,7 @@ package com.att.tdp.popcorn_palace.controller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.att.tdp.popcorn_palace.model.Movie;
-import com.att.tdp.popcorn_palace.service.MovieService;
+import com.att.tdp.popcorn_palace.service.interfaces.MovieService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

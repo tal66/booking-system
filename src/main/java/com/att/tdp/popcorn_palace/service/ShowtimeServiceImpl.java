@@ -4,9 +4,8 @@ import com.att.tdp.popcorn_palace.exception.ShowtimeValidationException;
 import com.att.tdp.popcorn_palace.model.Movie;
 import com.att.tdp.popcorn_palace.model.Showtime;
 import com.att.tdp.popcorn_palace.repository.ShowtimeRepository;
+import com.att.tdp.popcorn_palace.service.interfaces.ShowtimeService;
 import jakarta.transaction.Transactional;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,20 +15,16 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class ShowtimeServiceImpl implements ShowtimeService {
 
     private static final Logger logger = LoggerFactory.getLogger(ShowtimeServiceImpl.class);
     private final ShowtimeRepository showtimeRepository;
-    private final Validator validator;
 
     @Autowired
     public ShowtimeServiceImpl(ShowtimeRepository showtimeRepository, Validator validator) {
         this.showtimeRepository = showtimeRepository;
-        this.validator = validator;
     }
 
     @Override
@@ -44,17 +39,12 @@ public class ShowtimeServiceImpl implements ShowtimeService {
 
     @Override
     public Optional<Showtime> addShowtime(Showtime showtime) {
-        // Run bean validation explicitly before saving
-//        validateShowtime(showtime);
+        return saveShowtime(showtime);
+    }
 
+    private Optional<Showtime> saveShowtime(Showtime showtime) {
         validate(showtime);
-
-        try {
-            return Optional.of(showtimeRepository.save(showtime));
-        } catch (Exception e) {
-            logger.error("Error saving showtime", e);
-            return Optional.empty();
-        }
+        return Optional.of(showtimeRepository.save(showtime));
     }
 
     @Override
@@ -69,12 +59,8 @@ public class ShowtimeServiceImpl implements ShowtimeService {
             showtime.setStartTime(updatedShowtime.getStartTime());
             showtime.setEndTime(updatedShowtime.getEndTime());
 
-            // Run bean validation explicitly before saving
-//            validateShowtime(showtime);
-
-            validate(showtime);
-
-            return Optional.of(showtimeRepository.save(showtime));
+//            validate(showtime);
+            return saveShowtime(showtime);
         }
 
         return Optional.empty();
@@ -101,23 +87,6 @@ public class ShowtimeServiceImpl implements ShowtimeService {
     }
 
     //// Validation methods
-
-    /**
-     * Validates the showtime entity using Bean Validation
-     * Throws ConstraintViolationException if validation fails
-     * (w.o this, this exception is wrapped)
-     */
-//    private void validateShowtime(Showtime showtime) {
-//        Set<ConstraintViolation<Showtime>> violations = validator.validate(showtime);
-//        if (!violations.isEmpty()) {
-//            String errorMessage = violations.stream()
-//                    .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
-//                    .collect(Collectors.joining(", "));
-//
-//            logger.error("Validation failed for showtime: {}", errorMessage);
-//            throw new ConstraintViolationException("Validation failed: " + errorMessage, violations);
-//        }
-//    }
 
     private void validate(Showtime showtime) {
         Pair<Boolean, String> validationOverlapResult = validateNoOverlapShowtime(showtime);
