@@ -12,11 +12,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.transaction.annotation.Transactional;
+//import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -129,6 +128,26 @@ public class MovieControllerIntegrationTest {
                 .andExpect(jsonPath("$.movie").value(nonExistentTitle));
 
         // Verify the database remains unchanged
+        assertThat(movieRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    public void deleteMovieSuccess() throws Exception {
+        // Create and add movie
+        Movie movie = new Movie("The Dark Knight", "Action", 152, 9.0, 2008);
+
+        mockMvc.perform(post("/movies")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(movie)))
+                .andExpect(status().isOk());
+
+        assertThat(movieRepository.findAll()).hasSize(1);
+
+        // Delete movie
+        mockMvc.perform(delete("/movies/{movieTitle}", movie.getTitle()))
+                .andExpect(status().isOk());
+
+        // Verify movie was deleted from database
         assertThat(movieRepository.findAll()).isEmpty();
     }
 }

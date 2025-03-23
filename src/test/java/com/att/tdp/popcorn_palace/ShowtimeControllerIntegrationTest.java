@@ -24,8 +24,7 @@ import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsStringIgnoringCase;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -209,23 +208,21 @@ public class ShowtimeControllerIntegrationTest {
         // Verify the first showtime was added
         assertThat(showtimeRepository.findAll()).hasSize(1);
 
-        // Now try to add non overlapping showtime
-        // Create second showtime that starts during the first one
+        // Create second showtime
         Instant startTime2 = startTime1.plus(150, ChronoUnit.MINUTES);
         Instant endTime2 = endTime1.plus(150, ChronoUnit.MINUTES);
-
         ShowtimeRequest showtimeRequest2 = new ShowtimeRequest(testMovie.getId(), 14.99, testTheater.getName(), startTime2, endTime2);
 
-        // Attempt to add overlapping showtime
+        // Add showtime that will later be updated to overlap
         mockMvc.perform(post("/showtimes")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(showtimeRequest2)))
                 .andExpect(status().isOk());
 
-        // Verify the second showtime was added
+        // Verify second showtime was added
         assertThat(showtimeRepository.findAll()).hasSize(2);
 
-        // Update the first showtime to overlap with the second one
+        // Update first showtime to overlap with the second one
         ShowtimeRequest updateRequest = new ShowtimeRequest(testMovie.getId(), 12.99, testTheater.getName(),
                 startTime2.minus(30, ChronoUnit.MINUTES), endTime2.minus(30, ChronoUnit.MINUTES));
 
@@ -236,5 +233,73 @@ public class ShowtimeControllerIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").exists())
                 .andExpect(jsonPath("$.error", containsStringIgnoringCase("overlap")));
+    }
+
+    @Test
+    public void testDeleteShowtime() throws Exception {
+        // Create and save showtime
+        Instant startTime = Instant.now().plus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+        Instant endTime = startTime.plus(120, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.SECONDS);
+        ShowtimeRequest showtimeRequest = new ShowtimeRequest(testMovie.getId(), 12.99, testTheater.getName(), startTime, endTime);
+        ShowtimeRequest showtimeRequest2 = new ShowtimeRequest(testMovie.getId(), 12.99, testTheater.getName(),
+                startTime.plus(1, ChronoUnit.DAYS), endTime.plus(1, ChronoUnit.DAYS));
+
+        // Add showtime
+        MvcResult addResult = mockMvc.perform(post("/showtimes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(showtimeRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // Extract showtime ID
+        Showtime savedShowtime = objectMapper.readValue(
+                addResult.getResponse().getContentAsString(), Showtime.class);
+
+        // add second showtime
+        mockMvc.perform(post("/showtimes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(showtimeRequest2)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // Verify showtime was added
+        assertThat(showtimeRepository.findAll()).hasSize(2);
+
+        // Delete showtime
+        mockMvc.perform(delete("/showtimes/{showtimeId}", savedShowtime.getId()))
+                .andExpect(status().isOk());
+
+        // Verify showtime was deleted
+        assertThat(showtimeRepository.findAll()).hasSize(1);
+        // Verify second showtime is still in database
+        assertThat(showtimeRepository.findAll().getFirst().getId()).isNotEqualTo(savedShowtime.getId());
+    }
+
+    @Test
+    public void testDeleteShowtimeNotFound() throws Exception {
+        // Attempt to delete a showtime that does not exist
+        mockMvc.perform(delete("/showtimes/{showtimeId}", 100))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").exists())
+                .andExpect(jsonPath("$.error", containsStringIgnoringCase("not found")));
+    }
+
+    @Test
+    public void testAddShowtimeWithNonExistMovie() throws Exception {
+        // Create test data with non-existent movie ID
+        Instant startTime = Instant.now().plus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+        Instant endTime = startTime.plus(148, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.SECONDS);
+        ShowtimeRequest showtimeRequest = new ShowtimeRequest(1000L, 12.99, testTheater.getName(), startTime, endTime);
+
+        // Attempt to add showtime with non-existent movie ID
+        mockMvc.perform(post("/showtimes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(showtimeRequest)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").exists())
+                .andExpect(jsonPath("$.error", containsStringIgnoringCase("not found")));
+
+        // Verify database state - no showtime should be added
+        assertThat(showtimeRepository.findAll()).hasSize(0);
     }
 }
