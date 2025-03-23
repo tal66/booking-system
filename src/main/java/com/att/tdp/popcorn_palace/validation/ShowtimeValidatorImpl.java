@@ -40,7 +40,6 @@ public class ShowtimeValidatorImpl implements ConstraintValidator<ShowtimeValida
             return false;
         }
 
-
         return true;
     }
 

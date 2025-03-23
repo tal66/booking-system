@@ -18,9 +18,6 @@ public class ShowtimeRequest {
     @DecimalMin(value = "0.0", message = "Price must be at least 0.0")
     private Double price;
 
-//    @NotNull(message = "Theater ID is required")
-//    private Long theaterId;
-
     @NotBlank(message = "Theater name is required")
     @Size(min = 1, max = 255, message = "Theater name must be between 1 and 255 characters")
     private String theater;

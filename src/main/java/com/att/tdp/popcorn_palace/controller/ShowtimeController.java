@@ -155,7 +155,6 @@ public class ShowtimeController {
             showtime.setEndTime(java.time.Instant.parse(request.getEndTime().toString()));
 
             logger.info("updating showtime for movie: '{}'", movie.get().getTitle());
-//            Optional<Showtime> optUpdatedShowtime;
             Optional<Showtime> optUpdatedShowtime = showtimeService.updateShowtime(showtimeId, showtime);
 
             if (optUpdatedShowtime.isEmpty()) {
