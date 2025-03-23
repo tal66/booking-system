@@ -1,5 +1,6 @@
 package com.att.tdp.popcorn_palace.model;
 
+import com.att.tdp.popcorn_palace.validation.MovieValidator;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -11,6 +12,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@MovieValidator
 public class Movie {
 
     @Id
@@ -36,10 +38,8 @@ public class Movie {
     @DecimalMax(value = "10.0", inclusive = true, message = "Rating must be at most 10.0")
     private Double rating;
 
-//    private static final int currentYear = java.time.Year.now().getValue();
     @NotNull(message = "Release year is required")
-    @Min(value = 1888, message = "Release year must be at least 1888")
-    @Max(value = 2025, message = "Release year must be at most 2025")
+    // min,max in validator
     private Integer releaseYear;
 
     // Constructor without id
@@ -50,13 +50,4 @@ public class Movie {
         this.rating = rating;
         this.releaseYear = releaseYear;
     }
-
-    // lowercase the title before saving/updating
-//    @PrePersist
-//    @PreUpdate
-//    private void formatTitle() {
-//        if (title != null) {
-//            title = title.toLowerCase();
-//        }
-//    }
 }
