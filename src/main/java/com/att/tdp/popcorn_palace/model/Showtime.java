@@ -52,23 +52,18 @@ public class Showtime {
         this.endTime = endTime;
     }
 
-//    @JsonProperty("movieId") // expose only movie ID
-//    public Long getMovieId() {
-//        return (movie != null) ? movie.getId() : null;
-//    }
+    @JsonProperty("movieId")
+    public Long getMovieId() {
+        return (movie != null) ? movie.getId() : null;
+    }
 
-    @JsonProperty("movie") // expose movie title instead of object
+    @JsonProperty("movie")
     public String getMovieTitle() {
         return (movie != null) ? movie.getTitle() : null;
     }
 
-    @JsonProperty("theater") // expose theater name instead of object
+    @JsonProperty("theater") // expose theater name
     public String getTheaterName() {
         return (theater != null) ? theater.getName() : null;
     }
-
-//    @JsonProperty("theaterId") // expose theater ID
-//    public Long getTheaterId() {
-//        return (theater != null) ? theater.getId() : null;
-//    }
 }

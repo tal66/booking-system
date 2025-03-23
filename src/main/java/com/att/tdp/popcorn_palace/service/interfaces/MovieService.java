@@ -1,12 +1,14 @@
 package com.att.tdp.popcorn_palace.service.interfaces;
 
 import com.att.tdp.popcorn_palace.model.Movie;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface MovieService {
     List<Movie> getAllMovies();
+    Page<Movie> getAllMoviesPaged(int page, int size);
 
     Optional<Movie> addMovie(Movie movie);
 

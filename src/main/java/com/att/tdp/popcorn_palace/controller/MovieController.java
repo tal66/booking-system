@@ -6,6 +6,7 @@ import com.att.tdp.popcorn_palace.model.Movie;
 import com.att.tdp.popcorn_palace.service.interfaces.MovieService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -34,6 +35,15 @@ public class MovieController {
 
         logger.info("all movies ({})", movies.size());
         return new ResponseEntity<>(movies, HttpStatus.OK);
+    }
+
+    @GetMapping("/all_paged")
+    public ResponseEntity<Page<Movie>> getMoviesPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Page<Movie> movies = movieService.getAllMoviesPaged(page, size);
+        return ResponseEntity.ok(movies);
     }
 
     @PostMapping

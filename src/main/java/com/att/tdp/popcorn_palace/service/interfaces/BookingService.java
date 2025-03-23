@@ -11,7 +11,7 @@ public interface BookingService {
 
 //    Optional<Booking> createBooking(Long showtimeId, Integer seatNumber);
 
-    Optional<Booking> createBooking(Long showtimeId, Integer seatNumber, String userId);
+    Optional<Booking> createBooking(Long showtimeId, Integer seatNumber, UUID userId);
 
     Optional<Booking> getBookingById(UUID id);
 

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/bookings")
@@ -66,4 +67,22 @@ public class BookingController {
         }
     }
 
+    @GetMapping("/{bookingId}")
+    public ResponseEntity<?> getBookingById(@PathVariable UUID bookingId) {
+        logger.info("Request received to retrieve booking with ID: {}", bookingId);
+
+        Optional<Booking> booking = bookingService.getBookingById(bookingId);
+
+        if (booking.isPresent()) {
+            logger.info("Booking found with ID: {}", bookingId);
+            return ResponseEntity.ok(booking.get());
+        } else {
+            logger.warn("Booking not found with ID: {}", bookingId);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("error", "Booking not found");
+
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+    }
 }

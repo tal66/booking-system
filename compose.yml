@@ -9,8 +9,8 @@ services:
   #  volumes:
    #   - type: bind
    #     source: ./data
-   #     target: /var/lib/postgresql/data --> in case u need to save data to local storage
+   #     target: /var/lib/postgresql/data
     ports:
       - target: 5432
-        published: 5432
+        published: 5433 # 5432 for local
         protocol: tcp

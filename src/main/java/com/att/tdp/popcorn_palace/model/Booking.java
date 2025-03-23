@@ -30,8 +30,8 @@ public class Booking {
     @Min(value = 1, message = "Seat number must be at least 1")
     private Integer seatNumber;
 
-    @NotBlank(message = "User ID is required")
-    private String userId;
+    @NotNull(message = "User ID is required")
+    private UUID userId;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -42,15 +42,9 @@ public class Booking {
     }
 
     // Constructor without id
-    public Booking(Showtime showtime, Integer seatNumber, String userId) {
+    public Booking(Showtime showtime, Integer seatNumber, UUID userId) {
         this.showtime = showtime;
         this.seatNumber = seatNumber;
         this.userId = userId;
     }
-
-    // Constructor without userId
-//    public Booking(Showtime showtime, Integer seatNumber) {
-//        this.showtime = showtime;
-//        this.seatNumber = seatNumber;
-//    }
 }

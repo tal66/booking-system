@@ -1,11 +1,12 @@
 package com.att.tdp.popcorn_palace.dto;
 
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -19,6 +20,6 @@ public class BookingRequest {
     @Min(value = 1, message = "Seat number must be at least 1")
     private Integer seatNumber;
 
-    @NotBlank(message = "User ID is required")
-    private String userId;
+    @NotNull(message = "User ID is required")
+    private UUID userId;
 }

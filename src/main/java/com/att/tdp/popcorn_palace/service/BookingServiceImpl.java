@@ -32,7 +32,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
-    public Optional<Booking> createBooking(Long showtimeId, Integer seatNumber, String userId) {
+    public Optional<Booking> createBooking(Long showtimeId, Integer seatNumber, UUID userId) {
 
         // check showtime exists
         Optional<Showtime> showtimeOpt = showtimeService.getShowtimeById(showtimeId);

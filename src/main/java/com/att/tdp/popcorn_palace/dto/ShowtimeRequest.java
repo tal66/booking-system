@@ -1,17 +1,18 @@
 package com.att.tdp.popcorn_palace.dto;
 
 import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.Instant;
 
+@AllArgsConstructor
+@NoArgsConstructor
 @Data
 public class ShowtimeRequest {
     @NotNull(message = "Movie ID is required")
     private Long movieId;
-
-//    @NotBlank(message = "Movie name is required")
-//    @Size(min = 1, max = 255, message = "Movie name must be between 1 and 255 characters")
-//    private String movie;
 
     @NotNull(message = "Price is required")
     @DecimalMin(value = "0.0", message = "Price must be at least 0.0")

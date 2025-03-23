@@ -1,6 +1,5 @@
-package com.att.tdp.popcorn_palace.controller;
+package com.att.tdp.popcorn_palace.exception;
 
-import com.att.tdp.popcorn_palace.exception.ShowtimeValidationException;
 import com.att.tdp.popcorn_palace.validation.ShowtimeValidator;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
@@ -11,14 +10,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.transaction.TransactionSystemException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -30,12 +32,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
 
-        ex.getBindingResult().getAllErrors().forEach(error -> {
+        String errStr = "Validation failed. " + ex.getBindingResult().getAllErrors().stream().map(error -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
-        });
+            return fieldName + ": " + errorMessage;
+        }).collect(Collectors.joining(", "));
 
+        errors.put("error", errStr);
         logger.warn("Validation failed: {}", errors);
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
@@ -63,6 +66,27 @@ public class GlobalExceptionHandler {
 
         errors.put("error", err);
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errors);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<Map<String, String>> handleResourceNotFound(NoResourceFoundException ex) {
+        logger.warn("Resource not found: {}", ex.getMessage());
+
+        Map<String, String> errors = new HashMap<>();
+        errors.put("error", "Resource not found");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errors);
+    }
+
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<Map<String, String>> handleMediaTypeNotSupported(HttpMediaTypeNotSupportedException ex) {
+        logger.warn("Media type not supported: {}", ex.getMessage());
+
+        Map<String, String> errors = new HashMap<>();
+        errors.put("error", "Media type not supported");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -111,6 +135,9 @@ public class GlobalExceptionHandler {
 
         Map<String, String> errors = new HashMap<>();
         String errorMessage = "Required request body is missing";
+        if (ex.getMessage() != null && !ex.getMessage().contains("popcorn")) {
+            errorMessage += ": " + ex.getMessage();
+        }
 
         errors.put("error", errorMessage);
 
@@ -161,8 +188,6 @@ public class GlobalExceptionHandler {
         } else {
             logger.error("Stack trace: ", ex);
         }
-
-
 
         response.put("error", err);
         return ResponseEntity.internalServerError().body(response);
